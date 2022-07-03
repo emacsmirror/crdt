@@ -127,6 +127,13 @@ See `crdt-new-session'.'"
   "Alpha value for highlighting selections."
   :type 'float)
 
+(defcustom crdt-tuntox-password-in-url nil
+  "Whether or not to include the session password in the tuntox connection URL.
+Useful if you plan to share your session URL over a trusted secure channel. Your
+password will be in plaintext in the URL, so take care when sharing URLs with
+this option enabled."
+  :type 'boolean)
+
 ;;; Pseudo cursor/region utils
 
 (defvar crdt-cursor-colors
@@ -2359,15 +2366,18 @@ Each element should be one of
     (process-put network-process 'crdt-session new-session)
     (push new-session crdt--session-list)
     (if tuntox-p ; TODO: factor this out like `crdt-start-stunnel'
-        (let ((proxy-process
-               (make-process :name "Tuntox Proxy"
-                             :buffer (generate-new-buffer "*Tuntox Proxy*")
-                             :command
-                             `(,crdt-tuntox-executable
-                               "-C" ,(expand-file-name crdt-tuntox-key-path)
-                               "-f" "/dev/stdin" ; do the filtering for safety sake
-                               ,@ (when (and password (> (length password) 0))
-                                    `("-s" ,password))))))
+        (let* ((password-p (and password (> (length password) 0)))
+               (proxy-process
+                (make-process :name "Tuntox Proxy"
+                              :buffer (generate-new-buffer "*Tuntox Proxy*")
+                              :command
+                              `(,crdt-tuntox-executable
+                                "-C" ,(expand-file-name crdt-tuntox-key-path)
+                                "-f" "/dev/stdin" ; do the filtering for safety sake
+                                ,@ (when password-p
+                                     `("-s" ,password))))))
+          (when password-p
+            (process-put proxy-process 'password password))
           (display-buffer (process-buffer proxy-process))
           (process-put network-process 'tuntox-process proxy-process)
           (process-send-string proxy-process (format "127.0.0.1:%s\n" port)) ; only allow connection to our port
@@ -2435,16 +2445,20 @@ Currently this only work if a tuntox proxy is used."
          (network-process (crdt--session-network-process session))
          (tuntox-process (process-get network-process 'tuntox-process)))
     (if tuntox-process
-        (progn
-          (kill-new (format "tuntox://%s:%s"
-                            (with-current-buffer (process-buffer tuntox-process)
-                              (save-excursion
-                                (goto-char (point-min))
-                                (search-forward "Using Tox ID: ")
-                                (let ((start (point)))
-                                  (end-of-line)
-                                  (buffer-substring-no-properties start (point)))))
-                            (process-contact network-process :service)))
+        (let ((url-base (format "tuntox://%s:%s"
+                                (with-current-buffer (process-buffer tuntox-process)
+                                  (save-excursion
+                                    (goto-char (point-min))
+                                    (search-forward "Using Tox ID: ")
+                                    (let ((start (point)))
+                                      (end-of-line)
+                                      (buffer-substring-no-properties start (point)))))
+                                (process-contact network-process :service))))
+          (kill-new (if (and crdt-tuntox-password-in-url (process-get tuntox-process 'password))
+                        (format "%s?pwd=%s"
+                                url-base
+                                (process-get tuntox-process 'password))
+                      url-base))
           (message "URL copied."))
       (message "No known URL to copy, find out your public IP address yourself!"))))
 
@@ -2545,7 +2559,9 @@ Join with DISPLAY-NAME."
              (let ((port (read-from-minibuffer (format "tuntox proxy port (default %s): "
                                                        (1+ (url-portspec url)))
                                                nil nil t nil (format "%s" (1+ (url-portspec url)))))
-                   (password (read-passwd "tuntox password (empty for no password): ")))
+                   (password (or (when (url-filename url)
+                                   (cadr (split-string (url-filename url) "?pwd=")))
+                                 (read-passwd "tuntox password (empty for no password): "))))
                (switch-to-buffer-other-window
                 (process-buffer
                  (make-process
