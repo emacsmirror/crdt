@@ -23,7 +23,7 @@ Highlights:
 of ~crdt.el~ not working.  Because currently the network protocol is
 not stablized, behavior when using mismatched versions is
 unexpectable.
-- Strictly speaking, it should works when =crdt-protocol-version= are
+- Strictly speaking, it should work when =crdt-protocol-version= are
   defined (added after version =0.2.5=) and the same on all peers.
   But why not save some hassle and keep everyone on the latest
   version.
@@ -46,9 +46,17 @@ If a new session is to be created, you need to enter port (default to
 6530), optional password and your display name (default to your
 current =(user-full-name)=).
 
+Experimental settings: "Secure Port" specifies TLS port, and "Command
+Functions" specifies user permissions. It's ok to just use the default
+values.
+
 ** Join a session
 
 =M-x crdt-connect=, then enter address, port, and your display name.
+
+If the server has provided the permission (this is the default case),
+connected user may also add their buffers to the session via
+=M-x crdt-share-buffer=.
   
 ** List active users
 
