@@ -84,8 +84,7 @@ connected user may also add their buffers to the session via
 all other users from it.  This will ask for your confirmation,
 customize =crdt-confirm-stop-session= if you want to disable it.
 
-You can also press ~k~ or ~d~ in the session list (show it by =M-x
-crdt-list-sessions=).
+You can also press ~k~ or ~d~ in the session list (show it by =M-x crdt-list-sessions=).
 
 =M-x crdt-stop-share-buffer= removes current buffer from its CRDT
 session (this operation is only allowed at server side). You can also
@@ -95,8 +94,7 @@ press ~k~ or ~d~ in the buffer list.
 
 =M-x crdt-disconnect=, then choose a session to disconnect from.
 
-You can also press ~k~ or ~d~ in the session list (show it by =M-x
-crdt-list-sessions=).
+You can also press ~k~ or ~d~ in the session list (show it by =M-x crdt-list-sessions=).
 
 The server Emacs has the privilege to disconnect a user from a
 session.  To do so, press ~k~ or ~d~ on an entry in the user list
