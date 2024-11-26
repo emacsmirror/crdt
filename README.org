@@ -58,6 +58,8 @@ If the server has provided the permission (this is the default case),
 connected user may also add their buffers to the session via
 =M-x crdt-share-buffer=.
 
+Connection URLs look like =ein://ipaddress:6530=
+
 ** Navigate through sessions
 
 - Sessions :: =M-x crdt-list-sessions= lists all sessions.
@@ -164,3 +166,31 @@ $ ssh -R EXAMPLE.COM:6530:127.0.0.1:6530 EXAMPLE.COM
   #+BEGIN_SRC 
 GatewayPorts yes
   #+END_SRC
+
+- For other tunneling solutions, see https://github.com/anderspitman/awesome-tunneling
+
+* Service
+=crdt.el= uses emacs' built in =(make-network-process)= to exchange elisp messages between clients, see =crdt--format-message=.
+
+You can see these messages in within emacs with =(setq crdt--log-network-traffic t)= and outside emacs with =nc= or =telnet=.
+#+begin_src bash
+nc localhost 6530 <<< '(hello "0.3.0")'
+#+end_src
+
+Demonstrating =(hello)=, =(get)=, and =(leave)=
+#+begin_src bash
+telnet localhost 6530
+...
+(hello "0.3.0")
+
+  (login 2)(add "testfile.org") ....
+
+(get "testfile.org")
+  (sync "testfile.org" (#("FILE CONTENTS ....
+
+(leave 2)
+#+end_src
+
+** Messages
+
+hello, leave, get, cursor, overlay-move, overlay-remove, overlay-put, return, var, ready
